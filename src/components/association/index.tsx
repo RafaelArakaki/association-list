@@ -1,3 +1,4 @@
+import { Dispatch, SetStateAction, useEffect } from "react";
 import { Button, Col, Row } from "antd";
 import {
   ForwardFilled,
@@ -7,23 +8,61 @@ import {
   MinusCircleFilled
 } from '@ant-design/icons';
 
-import styles from './styles.module.css';
+import type { IdNumber } from "../../types/basic.d";
 
-type IdNumber = {
-  id: number,
-  name: string,
-}
+import styles from './styles.module.css';
+import { sortableName } from "../../helpers/sortable";
 
 type AssociationProps = {
-  associationItems: IdNumber[],
-  nonAssociationItems: IdNumber[],
+  associationItems: Array<IdNumber>,
+  setAssociationItems: Dispatch<SetStateAction<Array<IdNumber>>>,
+  nonAssociationItems: Array<IdNumber>,
+  setNonAssociationItems: Dispatch<SetStateAction<Array<IdNumber>>>,
 }
 
 const AssociationComponent = (props: AssociationProps) => {
   const {
     associationItems,
-    nonAssociationItems
-  } = props;
+    setAssociationItems,
+    nonAssociationItems,
+    setNonAssociationItems
+  } = props;  
+
+  const handleRemoveItem = (user: IdNumber) => {
+    const updateAssociationList = associationItems.filter((item) => item.id !== user.id);
+
+    setAssociationItems(updateAssociationList);
+    setNonAssociationItems((prev) => [...prev, user]);
+  }
+  
+  const handleAddItem = (user: IdNumber) => {
+    const updateNonAssociationList = nonAssociationItems.filter((item) => item.id !== user.id);
+
+    setNonAssociationItems(updateNonAssociationList);
+    setAssociationItems((prev) => [...prev, user]);
+  }
+
+  const allItems = [...associationItems, ...nonAssociationItems];
+
+  const handleRemoveAllItems = () => {     
+    setAssociationItems([]);
+    setNonAssociationItems(allItems);
+  }
+
+  const handleAddAllItems = () => {
+    setNonAssociationItems([]);
+    setAssociationItems(allItems);
+  }
+
+  const filteredAssociationList = sortableName(associationItems);
+  const filteredNonAssociationList = sortableName(nonAssociationItems);
+
+  useEffect(() => {
+    const filteredList = nonAssociationItems.filter(item1 => !associationItems.some(item2 => item2.id === item1.id));
+    setNonAssociationItems(filteredList);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <Row justify="space-between">
@@ -36,6 +75,7 @@ const AssociationComponent = (props: AssociationProps) => {
             <Button
               type="text"
               className={styles.button_primary}
+              onClick={() => handleRemoveAllItems()}
             >
               <MinusCircleFilled className={styles.icon_del} />
               Remover todos             
@@ -43,11 +83,12 @@ const AssociationComponent = (props: AssociationProps) => {
           </Col>
         </Row>        
         <div className={styles.card}>
-          {associationItems.map((item) => (
+          {filteredAssociationList.map((item) => (
             <Button
               key={item.id}
               type="text"
               className={styles.button_remove}
+              onClick={() => handleRemoveItem(item)}
             >
               <CheckCircleFilled className={styles.icon_plus} />
               {item.name}
@@ -68,6 +109,7 @@ const AssociationComponent = (props: AssociationProps) => {
             <Button
               type="text"
               className={styles.button_primary}
+              onClick={() => handleAddAllItems()}
             > 
               <PlusCircleFilled className={styles.icon_plus} />
               Adicionar todos             
@@ -75,11 +117,12 @@ const AssociationComponent = (props: AssociationProps) => {
           </Col>
         </Row>        
         <div className={styles.card}>
-          {nonAssociationItems.map((item) => (
+          {filteredNonAssociationList.map((item) => (
             <Button
               key={item.id}
               type="text"
               className={styles.button_add}
+              onClick={() => handleAddItem(item)}
             >
               <CheckCircleFilled className={styles.icon_del} />
               {item.name}
